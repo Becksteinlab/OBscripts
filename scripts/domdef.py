@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# $Id: domdef.py 1155 2010-05-17 17:15:26Z oliver $
+# Copyright (c) 2010, 2018 Oliver Beckstein
+# Released under the MIT license
 
 """%prog [options] datafile
 
@@ -26,15 +27,16 @@ By convention, the resids are the numbers found in the x-ray structure. Use
 Compound selections are very primitive; typically you should *only* use
 domain_names that you defined previously and use boolean operators and
 parentheses to join them. No residue numbers are translated in compound
-selections. 
+selections.
 """
-from __future__ import with_statement
+
+from __future__ import with_statement, print_function, division
+
+from collections import OrderedDict
 
 import numpy
 
-# local copy (switch once in python)
-# get odict.py from http://dev.pocoo.org/hg/sandbox/raw-file/tip/odict.py
-from odict import odict
+
 
 class DomDef(object):
     """Class to handle input/ouput.
@@ -52,8 +54,8 @@ class DomDef(object):
     pymolcompound = "select %(domname)s, %(definition)s"
     def __init__(self,filename,offset=0):
         self.filename = filename
-        self.domains = odict()
-        self.compounds = odict()
+        self.domains = OrderedDict()
+        self.compounds = OrderedDict()
         self.domain_order = []
         self.offset = int(offset)
         self.load(filename)
@@ -94,12 +96,12 @@ class DomDef(object):
 # input = %(filename)r
 # offset = %(offset)d
 
-# name	    start    end
+# name      start    end
 """
                          % vars(self))
             for domname,(start_resid,end_resid) in self._ordered_domains():
                 domdef.write("%(domname)-11s %(start_resid)5d  %(end_resid)5d\n"% vars())
-        
+
             # write compounds
             domdef.write("# compound statements\n")
             for domname, definition in self.compounds.items():
@@ -121,7 +123,7 @@ class DomDef(object):
 
             self._write_vmd_addrep_domains(tcl)
 
-        print "# Load macros with 'source %s' in VMD" % filename
+        print("# Load macros with 'source %s' in VMD" % filename)
 
     def _write_vmd_addrep_domains(self, tcl, **kwargs):
         kwargs.setdefault('colorID', 6)  # silver
@@ -147,7 +149,7 @@ class DomDef(object):
         with open(filename, 'w') as bendix:
             bendix.write(" ".join(resids) + "\n")
 
-        print "# Wrote domains to Bendix helix file %r" % filename
+        print("# Wrote domains to Bendix helix file %r" % filename)
 
     def write_pymol(self,filename):
         with open(filename,'w') as pml:
@@ -163,8 +165,8 @@ class DomDef(object):
                 definition = self._transform('pymol',definition)
                 pml.write(self.pymolcompound % vars() + '\n')
 
-        print "# Load selection with '@%s' in PyMOL" % filename
-    
+        print("# Load selection with '@%s' in PyMOL" % filename)
+
     def write_charmm(self,filename):
         with open(filename,'w') as charmm:
             charmm.write("! $Id" "$\n"
@@ -179,11 +181,11 @@ class DomDef(object):
                 definition = self._transform('charmm',definition)
                 charmm.write(self.charmmcompound % vars() + '\n')
 
-        print """# Add SELECTION definitons to Charmm script with 'stream "%s"'""" % filename
-    
+        print("""# Add SELECTION definitons to Charmm script with 'stream "%s"'""" % filename)
+
     def write_xvg(self,filename):
         """Write secondary structure XVG graph."""
-        
+
         with open(filename,'w') as domdef:
             domdef.write("""# $Id: domdef.py 1155 2010-05-17 17:15:26Z oliver $
 # input = %(filename)r
@@ -192,7 +194,7 @@ class DomDef(object):
                          % vars(self))
             def _write(yval):
                 zero = 0
-                start_resid = last_start_resid = self.first                
+                start_resid = last_start_resid = self.first
                 domdef.write("%(start_resid)5d  %(zero)g\n"% vars())
                 for domname,(start_resid,end_resid) in self._ordered_domains():
                     if start_resid < last_start_resid:
@@ -207,12 +209,12 @@ class DomDef(object):
             _write(0.5)
             domdef.write('&\n')
             _write(-0.5)
-        print "# Wrote xvg file with secondary structure graph"
+        print("# Wrote xvg file with secondary structure graph")
 
     def _ordered_domains(self):
         for domname in self.domain_order:
             yield domname,self.domains[domname]
-    
+
     def _transform(self, mode, s):
         """Replace tokens |&! --> or,and,not"""
         # XXX: should be a dict of translation rules
@@ -233,7 +235,7 @@ if __name__ == '__main__':
     parser.add_option('-t','--vmd',dest="vmdfilename",
                       help="VMD tcl output, defining macro selections",metavar="FILE")
     parser.add_option('-b','--bendix',dest="bendixfilename",
-                      help="helix definition file for Bendix",metavar="FILE")  
+                      help="helix definition file for Bendix",metavar="FILE")
     parser.add_option('-p','--pymol',dest="pymolfilename",
                       help="PyMOL output, defining selections",metavar="FILE")
     parser.add_option('-c','--charmm',dest="charmmfilename",
@@ -241,8 +243,8 @@ if __name__ == '__main__':
     parser.add_option('-x','--xvg',dest="xvgfilename",
                       help="XVG output of secondary structure blocks",metavar="FILE")
     parser.add_option('-n','--offset',dest='offset',
-                      help="add OFFSET to the resids in the domain file [%default]",metavar="OFFSET")    
-    
+                      help="add OFFSET to the resids in the domain file [%default]",metavar="OFFSET")
+
     parser.set_defaults(offset=0, filename='/dev/stdout')
 
     opts,args = parser.parse_args()
