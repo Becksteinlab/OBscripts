@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# $Id: parallel.py 833 2009-12-17 21:52:39Z oliver $
 
 """%prog NPROC command [args ...] --- [input ...]
 
@@ -7,17 +6,36 @@ Simple process-based parallelizer. Launches NPROC processes of
 ``command`` with the input list distributed equally over all
 processes.
 
+Note that a triple-dash '---' is used to separate arguments for %prog
+from the input list so that those arguments may contain a double-dash
+'--' if necessary.
+
 NOTE:
 
  - NO SANITY CHECKS!
  - It is not clear if there a restrictions on the length of command
    lines (in python's subprocess); if this is the case then not all
    input files are processed.
+
+
+EXAMPLE:
+
+Compress files in parallel:
+
+   parallel.py 16 bzip2 -v --- *.dat
+
+
+Compress files in parallel (uses xargs):
+
+   find . -name '*.dat' -print0 | xargs -0  parallel.py 16 bzip2 -v ---
+
 """
+from __future__ import print_function
 
 import sys
 import subprocess
 import time
+
 import numpy
 
 WAIT_TIME = 1 # seconds to wait between polling processes
@@ -35,13 +53,13 @@ files = args[separator+1:]
 
 nfiles = len(files)
 
-print "-- nproc:      %(nproc)r" % vars()
-#print "-- files = %(files)r" % vars()
-print "-- nfiles:     %(nfiles)d" % vars()
-print "-- files/proc: %g" % (float(nfiles)/nproc, )
+print("-- nproc:      %(nproc)r" % vars())
+#print("-- files = %(files)r" % vars())
+print("-- nfiles:     %(nfiles)d" % vars())
+print("-- files/proc: %g" % (float(nfiles)/nproc, ))
 
 # one batch per process
-batches = [[] for i in xrange(nproc)]    # need different [] !!
+batches = [[] for i in range(nproc)]    # need different [] !!
 processes = numpy.array(nproc * [None])  # array of objects
 
 # round robin distribution
@@ -52,12 +70,12 @@ while len(files) > 0:
     x = files.pop(0)
     batches[i].append(x)
 
-print "-- batch sizes: %r" % map(len, batches)
+print("-- batch sizes: %r" % map(len, batches))
 
 for i,batch in enumerate(batches):
     _cmd = cmd + batch
-    #print "[%(i)2d] Launching process %(_cmd)r" % vars()
-    print "-- [%2d] Launching process %r with %d inputs" % (i,cmd,len(batch))
+    #print("[%(i)2d] Launching process %(_cmd)r" % vars())
+    print("-- [%2d] Launching process %r with %d inputs" % (i,cmd,len(batch)))
     processes[i] = subprocess.Popen(_cmd)
 
 def proc_running():
@@ -73,13 +91,13 @@ while proc_running():
 
 rc = returncodes()
 
-print "II all processes done"
-print "-- return codes: %r" % rc
+print("II all processes done")
+print("-- return codes: %r" % rc)
 
 if numpy.all(rc == 0):
     exit_code = 0
 else:
-    print "WW Warning: some processes finished with non-zero exit codes."
+    print("WW Warning: some processes finished with non-zero exit codes.")
     exit_code = 1
 
 sys.exit(exit_code)
