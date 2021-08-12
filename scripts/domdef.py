@@ -74,7 +74,7 @@ class DomDef(object):
                 else:
                     # simple selection (macro) definition
                     domname,start_resid,end_resid = fields
-                    self.domains[str(domname)] = map(self.transform, (int(start_resid), int(end_resid)))
+                    self.domains[str(domname)] = [self.transform(int(n)) for n in (start_resid, end_resid)]
                     self.domain_order.append(domname)
         # find first and last residue from macros
         resids = numpy.sort(numpy.ravel(self.domains.values()))
@@ -213,7 +213,7 @@ class DomDef(object):
 
     def _ordered_domains(self):
         for domname in self.domain_order:
-            yield domname,self.domains[domname]
+            yield domname, self.domains[domname]
 
     def _transform(self, mode, s):
         """Replace tokens |&! --> or,and,not"""
